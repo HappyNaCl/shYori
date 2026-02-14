@@ -1,0 +1,6 @@
+pyqt6
+pillow
+sqlalchemy
+torch
+torchvision
+manga-ocr
