@@ -23,4 +23,6 @@ class MainWindow(QWidget):
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
+        self.setWindowTitle("shYori")
+        self.setMinimumSize(1600, 850)
         self.showMaximized()
