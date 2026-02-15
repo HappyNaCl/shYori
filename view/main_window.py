@@ -11,6 +11,7 @@ class MainWindow(QWidget):
         self.navigator = Navigator(self.stack)
 
         self.main_page = MainPage(self.navigator)
+
         self.overlay_page = OverlayPage(self.navigator)
         self.navigator.register_overlay(self.overlay_page)
 
@@ -24,5 +25,16 @@ class MainWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.setWindowTitle("shYori")
-        self.setMinimumSize(1600, 850)
+
+        (width, height) = self.getScreenDimension()
+        self.setMinimumSize(width, height)
+        
         self.showMaximized()
+
+    def getScreenDimension(self) -> tuple[int, int]:
+        screen = self.screen()
+        if screen != None:
+            geometry = screen.availableGeometry()
+            return (int(geometry.width() * 0.8), int(geometry.height() * 0.8))
+
+        return (1600, 850)
