@@ -2,15 +2,15 @@ from PyQt6.QtWidgets import QStackedWidget
 from enum import Enum
 
 class Page(Enum):
-    MAIN = 0
-    SCAN = 1
+    MAIN = 1
+    SCAN = 2
 
 class Navigator:
     def __init__(self, stack: QStackedWidget):
         self.stack = stack
         self.overlay = None
 
-    def register_overlay(self, overlay):
+    def registerOverlay(self, overlay):
         self.overlay = overlay
 
     def go(self, page: Page):

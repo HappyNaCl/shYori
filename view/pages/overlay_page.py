@@ -8,8 +8,8 @@ from PyQt6.QtGui import (
     QGuiApplication
 )
 
+from controller import translator_controller
 from view.navigator import Navigator, Page
-
 
 class OverlayPage(QWidget):
     def __init__(self, navigator: Navigator):
@@ -24,80 +24,47 @@ class OverlayPage(QWidget):
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents,
-            True
-        )
-
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setCursor(Qt.CursorShape.CrossCursor)
 
         self.start_point = QPoint()
         self.end_point = QPoint()
         self.selecting = False
-        self.capture_mode = False
 
     def keyPressEvent(self, a0: QKeyEvent | None) -> None:
-        if a0 is None:
-            return
-
-        if a0.key() == Qt.Key.Key_Shift:
-            self.capture_mode = True
-            self.setAttribute(
-                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
-                False
-            )
-
-            self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-            self.setFocus()
-
-            self.setCursor(Qt.CursorShape.CrossCursor)
-            self.update()
-        elif a0.key() in (Qt.Key.Key_Q, Qt.Key.Key_Escape):
-            self.exit_overlay()
-
-    def keyReleaseEvent(self, a0: QKeyEvent | None) -> None:
-        if a0 and a0.key() == Qt.Key.Key_Shift:
-            self.capture_mode = False
-            self.setAttribute(
-                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
-                True
-            )
-            self.setCursor(Qt.CursorShape.ArrowCursor)
-            self.update()
+        if a0 and a0.key() in (Qt.Key.Key_Q, Qt.Key.Key_Escape):
+            self.exitOverlay()
 
     def mousePressEvent(self, a0: QMouseEvent | None) -> None:
-        if (
-            a0
-            and self.capture_mode
-            and a0.button() == Qt.MouseButton.LeftButton
-        ):
+        if a0 and a0.button() == Qt.MouseButton.LeftButton:
             self.start_point = a0.position().toPoint()
             self.end_point = self.start_point
             self.selecting = True
             self.update()
+        elif a0 and a0.button() == Qt.MouseButton.RightButton:
+            self.exitOverlay()
 
     def mouseMoveEvent(self, a0: QMouseEvent | None) -> None:
-        if a0 and self.capture_mode and self.selecting:
+        if a0 and self.selecting:
             self.end_point = a0.position().toPoint()
             self.update()
 
     def mouseReleaseEvent(self, a0: QMouseEvent | None) -> None:
-        if (
-            a0
-            and self.capture_mode
-            and a0.button() == Qt.MouseButton.LeftButton
-        ):
+        if a0 and a0.button() == Qt.MouseButton.LeftButton:
             self.selecting = False
             rect = QRect(self.start_point, self.end_point).normalized()
 
-            self.capture_region(rect)
+            self.hide()
+            QGuiApplication.processEvents()
+
+            self.captureRegion(rect)
 
             self.start_point = QPoint()
             self.end_point = QPoint()
-
+            self.showFullScreen()
             self.update()
 
-    def capture_region(self, rect: QRect):
+    def captureRegion(self, rect: QRect):
         screen = QGuiApplication.primaryScreen()
         if screen:
             screenshot = screen.grabWindow(
@@ -107,9 +74,7 @@ class OverlayPage(QWidget):
                 rect.width(),
                 rect.height()
             )
-
-            screenshot.save("capture.png")
-            print("Captured region saved.")
+            translator_controller.translate(screenshot)
 
     def paintEvent(self, a0):
         painter = QPainter(self)
@@ -118,17 +83,8 @@ class OverlayPage(QWidget):
         # Dim whole screen
         painter.fillRect(self.rect(), QColor(0, 0, 0, 120))
 
-        # Mode indicator
-        if not self.capture_mode:
-            painter.setPen(QColor(255, 255, 255))
-            painter.drawText(
-                40, 60,
-                "Passive Mode (Hold SHIFT to capture)"
-            )
-            return
-
         painter.setPen(QColor(255, 255, 255))
-        painter.drawText(40, 60, "Capture Mode")
+        painter.drawText(40, 60, "Capture Mode (ESC to exit)")
 
         if self.selecting:
             rect = QRect(self.start_point, self.end_point).normalized()
@@ -153,14 +109,7 @@ class OverlayPage(QWidget):
         self.setFocus()
         self.show()
 
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents,
-            True
-        )
-
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-
-    def exit_overlay(self):
+    def exitOverlay(self):
         self.navigator.go(Page.MAIN)
 
         main_window = self.navigator.stack.window()
