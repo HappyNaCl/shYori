@@ -1,17 +1,19 @@
+from functools import partial
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import Qt, QPoint, QRect
+from PyQt6.QtCore import Qt, QPoint, QRect, QThread
 from PyQt6.QtGui import (
     QKeyEvent,
     QMouseEvent,
     QPainter,
     QColor,
-    QGuiApplication
+    QGuiApplication,
+    QPixmap,
 )
 
-from controller import translator_controller
-from view.navigator import Navigator, Page
+from views.navigator import Navigator, Page
+from workers import TranslatorWorker
 
-class OverlayPage(QWidget):
+class ScanPage(QWidget):
     def __init__(self, navigator: Navigator):
         super().__init__()
         self.navigator = navigator
@@ -74,13 +76,31 @@ class OverlayPage(QWidget):
                 rect.width(),
                 rect.height()
             )
-            translator_controller.translate(screenshot)
+            self.startTranslatorWorker(screenshot)
+
+    def startTranslatorWorker(self, screenshot: QPixmap):
+        self.translator_thread = QThread()
+        self.translator_worker = TranslatorWorker()
+
+        self.translator_worker.moveToThread(self.translator_thread)
+
+        self.translator_thread.started.connect(partial(self.translator_worker.run, screenshot))
+        self.translator_worker.result.connect(self.onTranslationReady)
+
+        self.translator_worker.finished.connect(self.translator_thread.quit)
+        self.translator_worker.finished.connect(self.translator_worker.deleteLater)
+        self.translator_thread.finished.connect(self.translator_thread.deleteLater)
+
+        self.translator_thread.start()
+
+    def onTranslationReady(self, translation):
+        self.exitOverlay(translation)
+
 
     def paintEvent(self, a0):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Dim whole screen
         painter.fillRect(self.rect(), QColor(0, 0, 0, 120))
 
         painter.setPen(QColor(255, 255, 255))
@@ -109,8 +129,8 @@ class OverlayPage(QWidget):
         self.setFocus()
         self.show()
 
-    def exitOverlay(self):
-        self.navigator.go(Page.MAIN)
+    def exitOverlay(self, translation=None):
+        self.navigator.go(Page.MAIN, data=translation)
 
         main_window = self.navigator.stack.window()
         if main_window:

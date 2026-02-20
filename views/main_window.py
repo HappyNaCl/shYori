@@ -1,9 +1,9 @@
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget
 from controller import translator_controller
-from worker import InitWorker
-from view.pages import MainPage, OverlayPage, LoadingPage
-from view.navigator import Navigator
+from workers import InitWorker
+from views.pages import MainPage, ScanPage, LoadingPage
+from views.navigator import Navigator
 from PyQt6.QtCore import Qt, QThread
 
 class MainWindow(QWidget):
@@ -15,7 +15,10 @@ class MainWindow(QWidget):
 
         self.loading_page = LoadingPage()
         self.main_page = MainPage(self.navigator)
-        self.overlay_page = OverlayPage(self.navigator)
+        self.overlay_page = ScanPage(self.navigator)
+
+        self.navigator.registerPage(self.main_page)
+        self.navigator.registerPage(self.overlay_page)
 
         self.navigator.registerOverlay(self.overlay_page)
 

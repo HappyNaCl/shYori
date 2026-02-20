@@ -20,6 +20,7 @@ class TranslatorController:
         if self.ocr:
             text = self.ocr(f"{self.temp_path}/{uuid_str}.png")
             print(text)
+            return text
         return ""
 
     def cleanup(self):
