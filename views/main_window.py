@@ -1,12 +1,12 @@
 from PyQt6.QtGui import QCloseEvent
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget
+from PyQt6.QtWidgets import QMainWindow, QStackedWidget
 from controller import translator_controller
 from workers import InitWorker
 from views.pages import MainPage, ScanPage, LoadingPage
 from views.navigator import Navigator
 from PyQt6.QtCore import Qt, QThread
 
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -25,9 +25,7 @@ class MainWindow(QWidget):
         self.stack.addWidget(self.loading_page)  # index 0
         self.stack.addWidget(self.main_page)  # index 1
 
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.stack)
-        self.setLayout(main_layout)
+        self.setCentralWidget(self.stack)
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
